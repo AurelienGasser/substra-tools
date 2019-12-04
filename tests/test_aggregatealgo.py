@@ -13,11 +13,11 @@ class DummyAggregateAlgo(algo.AggregateAlgo):
             new_model['value'] += m['value']
         return new_model
 
-    def load_model(self, path):
+    def load_model(self, path, rank):
         with open(path, 'r') as f:
             return json.load(f)
 
-    def save_model(self, model, path):
+    def save_model(self, model, path, rank):
         with open(path, 'w') as f:
             json.dump(model, f)
 

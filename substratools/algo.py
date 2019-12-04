@@ -48,10 +48,10 @@ class Algo(abc.ABC):
             predictions = 0
             return predictions
 
-        def load_model(self, path):
+        def load_model(self, path, rank):
             return json.load(path)
 
-        def save_model(self, model, path):
+        def save_model(self, model, path, rank):
             json.dump(model, path)
 
 
@@ -140,7 +140,7 @@ class Algo(abc.ABC):
         return self.predict(*args, **kwargs)
 
     @abc.abstractmethod
-    def load_model(self, path):
+    def load_model(self, path, rank):
         """Deserialize model from file.
 
         This method will be executed before the call to the methods
@@ -149,6 +149,7 @@ class Algo(abc.ABC):
         # Arguments
 
         path: path of the model to load.
+        rank: rank of the training task.
 
         # Returns
 
@@ -157,7 +158,7 @@ class Algo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save_model(self, model, path):
+    def save_model(self, model, path, rank):
         """Serialize model in file.
 
         This method will be executed after the call to the methods
@@ -167,6 +168,7 @@ class Algo(abc.ABC):
 
         path: path of file to write.
         model: the model to serialize.
+        rank: rank of the training task.
         """
         raise NotImplementedError
 
@@ -183,7 +185,7 @@ class AlgoWrapper(object):
             opener.load_from_module(workspace=self._workspace)
         self._interface = interface
 
-    def _load_models(self, model_names):
+    def _load_models(self, model_names, rank):
         """Load models in-memory from names."""
         # load models from workspace and deserialize them
         models = []
@@ -191,7 +193,7 @@ class AlgoWrapper(object):
         logger.info("loading models from '{}'".format(models_path))
         for name in model_names:
             path = os.path.join(models_path, name)
-            m = self._interface.load_model(path)
+            m = self._interface.load_model(path, rank)
             models.append(m)
         return models
 
@@ -202,7 +204,7 @@ class AlgoWrapper(object):
         y = self._opener_wrapper.get_y(fake_data)
 
         # load models
-        models = self._load_models(model_names)
+        models = self._load_models(model_names, rank)
 
         # train new model
         logger.info("launching training task")
@@ -213,20 +215,20 @@ class AlgoWrapper(object):
         # serialize output model and save it to workspace
         logger.info("saving output model to '{}'".format(
             self._workspace.output_model_path))
-        self._interface.save_model(model, self._workspace.output_model_path)
+        self._interface.save_model(model, self._workspace.output_model_path, rank)
 
         # save predictions
         self._opener_wrapper.save_predictions(pred)
 
         return pred, model
 
-    def predict(self, model_name, fake_data=False):
+    def predict(self, model_name, rank=0, fake_data=False):
         """Predict method wrapper."""
         # load data from opener
         X = self._opener_wrapper.get_X(fake_data)
 
         # load models
-        models = self._load_models([model_name])
+        models = self._load_models([model_name], rank)
 
         # get predictions
         logger.info("launching predict task")
@@ -265,6 +267,10 @@ def _generate_algo_cli(interface):
         _parser.add_argument(
             '-d', '--fake-data', action='store_true', default=False,
             help="Enable fake data mode",
+        )
+        _parser.add_argument(
+            '-r', '--rank', type=int, default=0,
+            help="Define machine learning task rank",
         )
         _parser.add_argument(
             '--data-samples-path', default=None,
@@ -310,10 +316,6 @@ def _generate_algo_cli(interface):
         'models', type=str, nargs='*',
         help="Model names (must be located in default models folder)"
     )
-    train_parser.add_argument(
-        '-r', '--rank', type=int, default=0,
-        help="Define machine learning task rank",
-    )
     _parser_add_default_arguments(train_parser)
     train_parser.set_defaults(func=_train)
 
@@ -321,6 +323,7 @@ def _generate_algo_cli(interface):
         algo_wrapper = _algo_from_args(args)
         algo_wrapper.predict(
             args.model,
+            args.rank,
             args.fake_data,
         )
 
@@ -371,16 +374,16 @@ class CompositeAlgo(abc.ABC):
             predictions = 0
             return predictions
 
-        def load_head_model(self, path):
+        def load_head_model(self, path, rank):
             return json.load(path)
 
-        def save_head_model(self, model, path):
+        def save_head_model(self, model, path, rank):
             json.dump(model, path)
 
-        def load_trunk_model(self, path):
+        def load_trunk_model(self, path, rank):
             return json.load(path)
 
-        def save_trunk_model(self, model, path):
+        def save_trunk_model(self, model, path, rank):
             json.dump(model, path)
 
 
@@ -454,7 +457,7 @@ class CompositeAlgo(abc.ABC):
         return self.predict(*args, **kwargs)
 
     @abc.abstractmethod
-    def load_head_model(self, path):
+    def load_head_model(self, path, rank):
         """Deserialize head model from file.
 
         This method will be executed before the call to the methods
@@ -463,6 +466,7 @@ class CompositeAlgo(abc.ABC):
         # Arguments
 
         path: path of the model to load.
+        rank: rank of the training task.
 
         # Returns
 
@@ -471,7 +475,7 @@ class CompositeAlgo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save_head_model(self, model, path):
+    def save_head_model(self, model, path, rank):
         """Serialize head model in file.
 
         This method will be executed after the call to the methods
@@ -481,11 +485,12 @@ class CompositeAlgo(abc.ABC):
 
         path: path of file to write.
         model: the model to serialize.
+        rank: rank of the training task.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_trunk_model(self, path):
+    def load_trunk_model(self, path, rank):
         """Deserialize trunk model from file.
 
         This method will be executed before the call to the methods
@@ -494,6 +499,7 @@ class CompositeAlgo(abc.ABC):
         # Arguments
 
         path: path of the model to load.
+        rank: rank of the training task.
 
         # Returns
 
@@ -502,7 +508,7 @@ class CompositeAlgo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save_trunk_model(self, model, path):
+    def save_trunk_model(self, model, path, rank):
         """Serialize trunk model in file.
 
         This method will be executed after the call to the methods
@@ -512,6 +518,7 @@ class CompositeAlgo(abc.ABC):
 
         path: path of file to write.
         model: the model to serialize.
+        rank: rank of the training task.
         """
         raise NotImplementedError
 
@@ -521,18 +528,18 @@ class CompositeAlgoWrapper(AlgoWrapper):
     _INTERFACE_CLASS = CompositeAlgo
     _DEFAULT_WORKSPACE_CLASS = CompositeAlgoWorkspace
 
-    def _load_head_trunk_models(self, head_filename, trunk_filename):
+    def _load_head_trunk_models(self, head_filename, trunk_filename, rank):
         """Load head and trunk models from their filename."""
         head_model = None
         if head_filename:
             head_model_path = os.path.join(self._workspace.input_models_folder_path,
                                            head_filename)
-            head_model = self._interface.load_head_model(head_model_path)
+            head_model = self._interface.load_head_model(head_model_path, rank)
         trunk_model = None
         if trunk_filename:
             trunk_model_path = os.path.join(self._workspace.input_models_folder_path,
                                             trunk_filename)
-            trunk_model = self._interface.load_trunk_model(trunk_model_path)
+            trunk_model = self._interface.load_trunk_model(trunk_model_path, rank)
         return head_model, trunk_model
 
     def train(self, input_head_model_filename=None, input_trunk_model_filename=None,
@@ -544,7 +551,7 @@ class CompositeAlgoWrapper(AlgoWrapper):
 
         # load head and trunk models
         head_model, trunk_model = self._load_head_trunk_models(
-            input_head_model_filename, input_trunk_model_filename)
+            input_head_model_filename, input_trunk_model_filename, rank)
 
         # train new models
         logger.info("launching training task")
@@ -555,11 +562,11 @@ class CompositeAlgoWrapper(AlgoWrapper):
         # serialize output head and trunk models and save them to workspace
         output_head_model_path = self._workspace.output_head_model_path
         logger.info("saving output head model to '{}'".format(output_head_model_path))
-        self._interface.save_head_model(head_model, output_head_model_path)
+        self._interface.save_head_model(head_model, output_head_model_path, rank)
 
         output_trunk_model_path = self._workspace.output_trunk_model_path
         logger.info("saving output trunk model to '{}'".format(output_trunk_model_path))
-        self._interface.save_trunk_model(trunk_model, output_trunk_model_path)
+        self._interface.save_trunk_model(trunk_model, output_trunk_model_path, rank)
 
         # save predictions
         self._opener_wrapper.save_predictions(pred)
@@ -567,14 +574,14 @@ class CompositeAlgoWrapper(AlgoWrapper):
         return pred, head_model, trunk_model
 
     def predict(self, input_head_model_filename, input_trunk_model_filename,
-                fake_data=False):
+                rank=0, fake_data=False):
         """Predict method wrapper."""
         # load data from opener
         X = self._opener_wrapper.get_X(fake_data)
 
         # load head and trunk models
         head_model, trunk_model = self._load_head_trunk_models(
-            input_head_model_filename, input_trunk_model_filename)
+            input_head_model_filename, input_trunk_model_filename, rank)
         assert head_model and trunk_model  # should not be None
 
         # get predictions
@@ -616,6 +623,10 @@ def _generate_composite_algo_cli(interface):
         _parser.add_argument(
             '-d', '--fake-data', action='store_true', default=False,
             help="Enable fake data mode",
+        )
+        _parser.add_argument(
+            '-r', '--rank', type=int, default=0,
+            help="Define machine learning task rank",
         )
         _parser.add_argument(
             '--data-samples-path', default=None,
@@ -675,10 +686,6 @@ def _generate_composite_algo_cli(interface):
         '--input-trunk-model-filename', type=str, default=None,
         help="Input trunk model filename (must be located in input models folder)"
     )
-    train_parser.add_argument(
-        '-r', '--rank', type=int, default=0,
-        help="Define machine learning task rank",
-    )
     _parser_add_default_arguments(train_parser)
     train_parser.set_defaults(func=_train)
 
@@ -687,6 +694,7 @@ def _generate_composite_algo_cli(interface):
         algo_wrapper.predict(
             args.input_head_model_filename,
             args.input_trunk_model_filename,
+            args.rank,
             args.fake_data,
         )
 
@@ -732,10 +740,10 @@ class AggregateAlgo(abc.ABC):
             new_model = None
             return new_model
 
-        def load_model(self, path):
+        def load_model(self, path, rank):
             return json.load(path)
 
-        def save_model(self, model, path):
+        def save_model(self, model, path, rank):
             json.dump(model, path)
 
 
@@ -763,7 +771,7 @@ class AggregateAlgo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def load_model(self, path):
+    def load_model(self, path, rank):
         """Deserialize model from file.
 
         This method will be executed before the call to the method `Algo.aggregate()`
@@ -772,6 +780,7 @@ class AggregateAlgo(abc.ABC):
         # Arguments
 
         path: path of the model to load.
+        rank: rank of the training task.
 
         # Returns
 
@@ -780,7 +789,7 @@ class AggregateAlgo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def save_model(self, model, path):
+    def save_model(self, model, path, rank):
         """Serialize model in file.
 
         This method will be executed after the call to the method `Algo.aggregate()`
@@ -790,6 +799,7 @@ class AggregateAlgo(abc.ABC):
 
         path: path of file to write.
         model: the model to serialize.
+        rank: rank of the training task.
         """
         raise NotImplementedError
 
@@ -803,7 +813,7 @@ class AggregateAlgoWrapper(object):
         self._workspace = workspace or self._DEFAULT_WORKSPACE_CLASS()
         self._interface = interface
 
-    def _load_models(self, model_names):
+    def _load_models(self, model_names, rank):
         """Load models in-memory from names."""
         # load models from workspace and deserialize them
         models = []
@@ -811,14 +821,14 @@ class AggregateAlgoWrapper(object):
         logger.info("loading models from '{}'".format(models_path))
         for name in model_names:
             path = os.path.join(models_path, name)
-            m = self._interface.load_model(path)
+            m = self._interface.load_model(path, rank)
             models.append(m)
         return models
 
     def aggregate(self, model_names, rank=0):
         """Aggregate method wrapper."""
         # load models
-        models = self._load_models(model_names)
+        models = self._load_models(model_names, rank)
 
         # train new model
         logger.info("launching aggregate task")
@@ -827,7 +837,7 @@ class AggregateAlgoWrapper(object):
         # serialize output model and save it to workspace
         logger.info("saving output model to '{}'".format(
             self._workspace.output_model_path))
-        self._interface.save_model(model, self._workspace.output_model_path)
+        self._interface.save_model(model, self._workspace.output_model_path, rank)
         return model
 
 

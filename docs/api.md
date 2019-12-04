@@ -35,10 +35,10 @@ class DummyAlgo(tools.Algo):
         predictions = 0
         return predictions
 
-    def load_model(self, path):
+    def load_model(self, path, rank):
         return json.load(path)
 
-    def save_model(self, model, path):
+    def save_model(self, model, path, rank):
         json.dump(model, path)
 
 
@@ -108,7 +108,7 @@ __Returns__
 
 ## load_model
 ```python
-Algo.load_model(self, path)
+Algo.load_model(self, path, rank)
 ```
 Deserialize model from file.
 
@@ -119,6 +119,7 @@ __Arguments__
 
 
 - __path__: path of the model to load.
+- __rank__: rank of the training task.
 
 __Returns__
 
@@ -127,7 +128,7 @@ __Returns__
 
 ## save_model
 ```python
-Algo.save_model(self, model, path)
+Algo.save_model(self, model, path, rank)
 ```
 Serialize model in file.
 
@@ -139,6 +140,7 @@ __Arguments__
 
 - __path__: path of file to write.
 - __model__: the model to serialize.
+- __rank__: rank of the training task.
 
 # CompositeAlgo
 ```python
@@ -180,16 +182,16 @@ class DummyCompositeAlgo(tools.CompositeAlgo):
         predictions = 0
         return predictions
 
-    def load_head_model(self, path):
+    def load_head_model(self, path, rank):
         return json.load(path)
 
-    def save_head_model(self, model, path):
+    def save_head_model(self, model, path, rank):
         json.dump(model, path)
 
-    def load_trunk_model(self, path):
+    def load_trunk_model(self, path, rank):
         return json.load(path)
 
-    def save_trunk_model(self, model, path):
+    def save_trunk_model(self, model, path, rank):
         json.dump(model, path)
 
 
@@ -243,7 +245,7 @@ __Returns__
 
 ## load_head_model
 ```python
-CompositeAlgo.load_head_model(self, path)
+CompositeAlgo.load_head_model(self, path, rank)
 ```
 Deserialize head model from file.
 
@@ -254,6 +256,7 @@ __Arguments__
 
 
 - __path__: path of the model to load.
+- __rank__: rank of the training task.
 
 __Returns__
 
@@ -262,7 +265,7 @@ __Returns__
 
 ## save_head_model
 ```python
-CompositeAlgo.save_head_model(self, model, path)
+CompositeAlgo.save_head_model(self, model, path, rank)
 ```
 Serialize head model in file.
 
@@ -274,10 +277,11 @@ __Arguments__
 
 - __path__: path of file to write.
 - __model__: the model to serialize.
+- __rank__: rank of the training task.
 
 ## load_trunk_model
 ```python
-CompositeAlgo.load_trunk_model(self, path)
+CompositeAlgo.load_trunk_model(self, path, rank)
 ```
 Deserialize trunk model from file.
 
@@ -288,6 +292,7 @@ __Arguments__
 
 
 - __path__: path of the model to load.
+- __rank__: rank of the training task.
 
 __Returns__
 
@@ -296,7 +301,7 @@ __Returns__
 
 ## save_trunk_model
 ```python
-CompositeAlgo.save_trunk_model(self, model, path)
+CompositeAlgo.save_trunk_model(self, model, path, rank)
 ```
 Serialize trunk model in file.
 
@@ -308,6 +313,7 @@ __Arguments__
 
 - __path__: path of file to write.
 - __model__: the model to serialize.
+- __rank__: rank of the training task.
 
 # AggregateAlgo
 ```python
@@ -340,10 +346,10 @@ class DummyAggregateAlgo(tools.AggregateAlgo):
         new_model = None
         return new_model
 
-    def load_model(self, path):
+    def load_model(self, path, rank):
         return json.load(path)
 
-    def save_model(self, model, path):
+    def save_model(self, model, path, rank):
         json.dump(model, path)
 
 
@@ -373,7 +379,7 @@ __Returns__
 
 ## load_model
 ```python
-AggregateAlgo.load_model(self, path)
+AggregateAlgo.load_model(self, path, rank)
 ```
 Deserialize model from file.
 
@@ -384,6 +390,7 @@ __Arguments__
 
 
 - __path__: path of the model to load.
+- __rank__: rank of the training task.
 
 __Returns__
 
@@ -392,7 +399,7 @@ __Returns__
 
 ## save_model
 ```python
-AggregateAlgo.save_model(self, model, path)
+AggregateAlgo.save_model(self, model, path, rank)
 ```
 Serialize model in file.
 
@@ -404,6 +411,7 @@ __Arguments__
 
 - __path__: path of file to write.
 - __model__: the model to serialize.
+- __rank__: rank of the training task.
 
 # Metrics
 ```python
